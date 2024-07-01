@@ -53,23 +53,17 @@
         </div>
       </div>
       <div class="container my-5 p-3" >
-        <ul v-if="stamps && stamps.length > 0">
-            <li v-for="i in stamps">
-              <div class="col-6">
-                Country: {{countries[i.country_id-1].name}}, {{countries[i.country_id-1].c_name}} 
-              </div>
-              <div class="col-6">
-                Year: {{i.year}} 
-              </div>
-              <div class="col-6">
-                Price: {{i.price}} {{i.unit}}
-              </div>
-              <div class="col-6">
-                <img :src=`images/stamps/${i.img}` class="img-fluid" >
-              </div>
-            </li>
-        </ul>
-        <h3 v-else>No Stamp Found</h3>
+        <div v-if="stamps && stamps.length > 0" v-for="i in stamps" class="row">
+          <div class="col-12">
+            {{countries[i.country_id-1].name}}, {{countries[i.country_id-1].c_name}} | {{i.year}} | {{i.price}} {{i.unit}}
+          </div>
+          <div class="col-12">
+            <img :src=`images/stamps/${i.img}` class="img-fluid" >
+          </div>
+        </div>
+        <div v-else>
+          <h3>No Stamp Found</h3>
+        </div>
       </div>
 
     </div>
