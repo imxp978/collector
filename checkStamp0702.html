@@ -64,11 +64,17 @@
       <div class="container my-5 p-3" >
         <div v-if="stamps && stamps.length > 0" v-for="i in stamps" class="row">
           <div class="col-12">
-            {{countries[i.country_id-1].name}}, {{countries[i.country_id-1].c_name}} | {{i.year}} | {{i.price}} {{i.unit}}
+            <h5>
+              {{ countries[i.country_id-1].name }}, {{ countries[i.country_id-1].c_name }} | {{ i.year }} | {{ i.price }} {{ i.unit }} | {{ i.img }}
+            </h5>
+          </div>
+          <div v-if="i.remark !== ''" class="col-12">
+            {{ i.remark }}
           </div>
           <div class="col-12">
             <img :src=`images/stamps/${i.img}` class="img-fluid" >
           </div>
+          <hr>
         </div>
         <div v-else>
           <h3>No Stamp Found</h3>
