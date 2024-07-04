@@ -38,7 +38,7 @@ if ($price !== null) {
 
 $where = count($condition) > 0 ? ' WHERE ' :'';
 
-$sql = "SELECT * FROM stamp". $where. implode(' AND ', $condition);
+$sql = "SELECT * FROM stamp" . $where . implode(' AND ', $condition) . " ORDER BY id DESC";
 
 // $sql = sprintf("SELECT * FROM stamp WHERE country_id = %d AND year = %s AND price = %d", $country, $year, $price);
 // $sql = "SELECT * FROM stamp";
@@ -48,7 +48,7 @@ $stamps = $query->fetchAll();
 if ($stamps) {
     $data = [
         'success' => true,
-        'message' => 'stamp found',
+        'message' => 'Stamp found',
         'stampData' => $stamps,
         'sql' => $sql
     ];
@@ -56,7 +56,7 @@ if ($stamps) {
 } else {
     $data = [
         'success' => false,
-        'message' => 'stamp not found',
+        'message' => 'No stamp found',
         'sql' => $sql       
     ];
 }

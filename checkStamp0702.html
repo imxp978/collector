@@ -30,6 +30,27 @@
         border-radius: 10px;
         box-shadow: 1px 1px 5px 1px gray;
       }
+      .loader {
+        margin: 0 auto;
+        border: 10px solid #f3f3f3; /* Light grey */
+        border-top: 10px solid #3498db; /* Blue */
+        border-radius: 50%;
+        width: 48px;
+        height: 48px;
+        animation: spin 0.3s linear infinite;
+        z-index: 1;
+      }
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      #gotop {
+        background: rgba(0,0,0,0.2) !important;
+        cursor: pointer;
+      }
+      #gotop:hover {
+        color: black !important;
+      }
       
     </style>
   </head>
@@ -62,29 +83,36 @@
         </div>
       </div>
       <div class="container my-5 p-3" >
-        <div v-if="stamps && stamps.length > 0" v-for="i in stamps" class="row">
+        <div v-if="isLoading" class="loader"></div>
+        <div v-else>
+          <h3 class="my-2 text-center" :class="success? 'text-primary': 'text-danger'">{{ message }}</h3>
+        </div>
+        <hr class="mb-3">
+        <div v-if="stamps && stamps.length > 0" v-for="i in stamps" :key="i.id" class="row">
           <div class="col-12">
             <h5>
               {{ countries[i.country_id-1].name }}, {{ countries[i.country_id-1].c_name }} | {{ i.year }} | {{ i.price }} {{ i.unit }} | {{ i.img }}
             </h5>
           </div>
           <div v-if="i.remark !== ''" class="col-12">
-            <p class="mx-5">{{ i.remark }}</p>
+            <p class="mx-3">{{ i.remark }}</p>
           </div>
           <div class="col-12">
             <img :src=`images/stamps/${i.img}` class="img-fluid" >
           </div>
           <hr>
         </div>
-        <div v-else>
-          <h3>No Stamp Found</h3>
+      </div>
+      <div class="text-end">
+        <div v-if="showGoTop" @click="goTop" id="gotop" class="position-fixed bottom-0 end-0 p-3 mb-4 me-4 bg-light text-white bg-opacity-10 rounded">
+         Go Top
         </div>
       </div>
 
     </div>
 
     <script>
-        const { createApp, ref } = Vue;
+        const { createApp, ref, onMounted } = Vue;
         
         const app = createApp({
           setup() {
@@ -267,8 +295,13 @@
             const unit = ref('');
             const remark = ref('');
             const image = ref('');
+            const message = ref('輸入查詢條件');
+            const isLoading = ref(false);
+            const success = ref(false);
+            const showGoTop = ref(false);
 
             function checkStamp () {
+              isLoading.value = true;
               console.log('===== query begin =====')
               console.log('country:', countries[selectedCountry.value-1].name, countries[selectedCountry.value-1].c_name);
               console.log('year:', year.value);
@@ -280,19 +313,26 @@
                 .then((response)=>{
                     // console.log(response.data);
                     if (response.data.success){
+                      message.value = response.data.message;
                       stamps.value = response.data.stampData;
-                      console.log('sql: ', response.data.sql)
-                      console.log('===== stamp found =====');
+                      success.value = true;
+                      console.log('sql: ', response.data.sql);
+                      console.log(response.data.message);
                     } else {
                       stamps.value = [];
-                      console.log('sql: ', response.data.sql)
-                      console.log('===== stamp not found =====');
+                      message.value = response.data.message;
+                      success.value = false;
+                      console.log('sql: ', response.data.sql);
+                      console.log(response.data.message);
                     }
                 })
                 .catch( (error) => {
+                  message.value = response.data.message;
+                  success.value = false;
                   console.log('sql: ', response.data.sql)
                   console.error('error: ',error);
-                });
+                })
+                .finally(()=>isLoading.value = false);
             }
 
             function selectFile (event) {
@@ -300,6 +340,8 @@
             }
 
             function addStamp () {
+              isLoading.value = true;
+
               const formData = new FormData();
               formData.append('country', selectedCountry.value,);
               formData.append('price', price.value);
@@ -315,14 +357,34 @@
               .then((response) => {
                 if (response.data.success) {
                   stamps.value = response.data.stampData;
-                  console.log('===== stamp added =====')
+                  message.value = response.data.message;
+                  success.value = true;
+                  console.log(response.data.message);
                 } else {
+                  message.value = response.data.message;
+                  success.value = false;
                   console.log(response.data.message)
-                  console.log('===== stamp added failed =====')
+
                 }
               })
-              .catch(error=>console.error('error',error));
+              .catch((error) =>{
+                console.error('error',error);
+                success.value = false;
+              })
+              .finally(()=>isLoading.value = false);
             }
+
+            const handleScroll = () => {
+              showGoTop.value = window.scrollY > 100;
+            };
+
+            const goTop = () => {
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            };
+
+            onMounted(() => {
+              window.addEventListener('scroll', handleScroll);
+            });
 
             return {
               countries,
@@ -333,9 +395,15 @@
               image,
               remark,
               unit,
+              message,
+              isLoading,
+              success,
+              showGoTop,
               checkStamp,
               selectFile,
-              addStamp
+              addStamp,
+              goTop,
+              handleScroll
             };
           }
         });
