@@ -56,10 +56,10 @@
   </head>
   <body>
     <div id="app">
-      <div class="container my-5 p-3">
+      <div class="container mt-0 mb-3">
         <h3 class="text-center">Check / Add Stamp</h3>
         <div class="row d-flex justify-content-center">
-          <div class="col-6">
+          <div class="col-xl-6">
             
             <select v-model="selectedCountry" class="form-control mb-3" value="" autofocus required>
               <option value="" selected disabled>選擇國家 Country</option>
@@ -82,7 +82,7 @@
           </div>
         </div>
       </div>
-      <div class="container my-5 p-3" >
+      <div class="container mb-3" >
         <div v-if="isLoading" class="loader"></div>
         <div v-else>
           <h3 class="my-2 text-center" :class="success? 'text-primary': 'text-danger'">{{ message }}</h3>
@@ -127,7 +127,6 @@
 
     <script>
         const { createApp, ref, onMounted } = Vue;
-        
         const app = createApp({
           setup() {
             const countries = [

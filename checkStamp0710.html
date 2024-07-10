@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Check Stamp</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous" />
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
+    crossorigin="anonymous"></script>
+  <style>
+    * {
+      word-wrap:break-word;
+    }
+
+    img {
+      max-width: 200px;
+      max-height: 250px;
+    }
+
+    .container {
+      background-color: lightgray;
+      border-radius: 10px;
+      box-shadow: 1px 1px 5px 1px gray;
+      
+    }
+
+    .loader {
+      margin: 0 auto;
+      border: 10px solid #f3f3f3;
+      border-top: 10px solid #3498db;
+      border-radius: 50%;
+      width: 48px;
+      height: 48px;
+      animation: spin 0.3s linear infinite;
+      z-index: 1;
+    }
+
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+    /* gotop */
+    #gotop {
+      background: rgba(0, 0, 0, 0.2) !important;
+      cursor: pointer;
+    }
+
+    #gotop:hover {
+      color: black !important;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app">
+    <div class="container mb-3 p-2">
+      <h3 class="text-center">Check / Add Stamp</h3>
+      <hr>
+      <div class="row d-flex justify-content-center">
+        <div class="col-6">
+          <select v-model.number="selectedCountry" class="form-control mb-3" value="" autofocus required>
+            <option value="" selected disabled>選擇國家 Country</option>
+            <option v-for="country in countries" :key="country.id" :value="country.id">{{ country.code }} | {{
+              country.name }} {{ country.c_name }}</option>
+          </select>
+          <input type="text" class="form-control mb-3" v-model="year" placeholder="輸入年分 Year" />
+          <input type="text" class="form-control mb-3" v-model="price" placeholder="輸入面額 Price" />
+          <div class="text-end">
+            <button @click="checkStamp" class="btn btn-dark">查閱郵票</button><br>
+          </div>
+        </div>
+        <div class="col-6">
+          <input type="text" class="form-control mb-1" v-model="unit" placeholder="輸入貨幣 Unit" />
+          <!-- <input type="text" class="form-control mb-3" v-model="remark" placeholder="輸入備註 Remark" /> -->
+          <textarea v-model="remark" placeholder="輸入備註 Remark" class="form-control mb-1"></textarea>
+          <input type="file" class="form-control mb-3" @change="selectFile" placeholder="輸入檔名 Image" />
+          <div class="text-end">
+            <button @click="addStamp" class="btn btn-dark">新增郵票</button><br>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="container mb-3 p-2">
+      <div v-if="isLoading" class="loader"></div>
+      <div v-else>
+        <h3 class="my-2 text-center" :class="success? 'text-primary': 'text-danger'">{{ message }}</h3>
+      </div>
+      <div class="col-12 row">
+        <div class="col-2" v-for="i in stamps" :key="i.id">
+          <hr class="mt-2">
+          <p>[{{ i.year }}] [{{ i.price }} {{ i.unit }}] {{ i.img }}</p>
+          <a :href=`#${i.id}`><img :src=`images/stamps/${i.img}` class="img-fluid"></a>
+        </div>
+      </div>
+    </div>
+
+  
+    <div class="container p-2">
+      <div v-if="stamps && stamps.length > 0" class="row">
+        <div v-for="i in stamps">
+          <a :name="i.id"></a>
+          <div class="col-12 mx-auto text-end" v-if="i.edit">
+            <button class="btn btn-outline-dark btn-sm" @click="cancelEdit(i)">取消</button>
+            <div class="row">
+              <div class="col-6 row">
+                <div class="col-2 text-end">國家：</div>
+                <div class="col-10">
+                  <select v-model.number="newCountry" class="form-control form-control-sm" value="" >
+                    <option value="" selected disabled>選擇國家 Country</option>
+                    <option v-for="country in countries" :key="country.id" :value="country.id">{{ country.code }} | {{ country.name }} {{ country.c_name }}</option>
+                  </select>
+                </div><br>
+                <div class="col-2 text-end">年份：</div>
+                <div class="col-10"><input type="text" class="form-control form-control-sm" v-model="newYear"></div><br>
+                <div class="col-2 text-end">面額：</div>
+                <div class="col-10"><input type="text" class="form-control form-control-sm" v-model="newPrice"></div><br>
+              </div>
+              <div class="col-6 row">
+                <div class="col-2 text-end">單位：</div>
+                <div class="col-10"><input type="text" class="form-control form-control-sm" v-model="newUnit"></div><br>
+                <div class="col-2 text-end">備註：</div>
+                <div class="col-10">
+                  <textarea v-model="newRemark" class="form-control form-control-sm"></textarea>
+                </div><br>
+                <div class="col-2 text-end">圖檔：</div>
+                <div class="col-10"><input type="file" class="form-control form-control-sm" @change="selectNewFile" placeholder="上傳新圖檔案"></div><br>
+
+              </div>
+            </div>
+            <button class="btn btn-dark btn-sm" @click="updateStamp(i)">儲存</button>
+            <hr>
+          </div>
+
+          <div class="col-12" v-else :key="i.id" >
+            <div v-if="!isEditing" class="text-end">
+              <button @click="editStamp(i)" class="btn btn-outline-dark btn-sm">編輯</button>
+            </div>
+            <h5>
+              {{ countries[i.country_id-1].name }}, {{ countries[i.country_id-1].c_name }} | {{ i.year }} | {{ i.price
+              }} {{ i.unit }} | {{ i.img }}
+            </h5>
+            <p class="mx-3">{{ i.remark }}</p><br>
+            <img :src=`images/stamps/${i.img}` class="img-fluid">
+            <hr>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- gotop -->
+    <div class="text-end">
+      <div v-if="showGoTop" @click="goTop" id="gotop"
+        class="position-fixed bottom-0 end-0 p-3 mb-4 me-4 bg-light text-white bg-opacity-10 rounded">
+        Go Top
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const { createApp, ref, onMounted } = Vue;
+    import('./countries.js').then(module => {
+      const countries = module.countries;
+    
+
+    const app = createApp({
+      setup() {
+
+        const selectedCountry = ref('');
+        const year = ref('');
+        const price = ref('');
+        const stamps = ref([]);
+        const unit = ref('');
+        const remark = ref('');
+        const image = ref('');
+        const message = ref('輸入查詢條件');
+        const isLoading = ref(false);
+        const success = ref(false);
+
+        // check
+        function checkStamp() {
+          isLoading.value = true;
+          console.log('===== query begin =====')
+          console.log('country:', countries[selectedCountry.value - 1].name, countries[selectedCountry.value - 1].c_name);
+          console.log('year:', year.value);
+          console.log('price:', price.value);
+
+          const queryUrl = `./controllers/checkStamp.php?country=${selectedCountry.value}&year=${year.value}&price=${price.value}`
+          axios.get(queryUrl)
+            .then((response) => {
+              if (response.data.success) {
+                message.value = response.data.message;
+                stamps.value = response.data.stampData.map(stamp => ({
+                  ...stamp, edit: false
+                }));
+                success.value = true;
+                console.log('sql: ', response.data.sql);
+                console.log(response.data.message);
+                // console.log(response.data.stampData);
+              } else {
+                stamps.value = [];
+                message.value = response.data.message;
+                success.value = false;
+                console.log('sql: ', response.data.sql);
+                console.log(response.data.message);
+              }
+            })
+            .catch((error) => {
+              message.value = response.data.message;
+              success.value = false;
+              console.log('sql: ', response.data.sql)
+              console.error('error: ', error);
+            })
+            .finally(() => isLoading.value = false);
+            
+        }
+
+        // add 
+        function selectFile(event) {
+          image.value = event.target.files[0];
+        }
+
+        function addStamp() {
+          isLoading.value = true;
+
+          const formData = new FormData();
+          formData.append('country', selectedCountry.value,);
+          formData.append('price', price.value);
+          formData.append('year', year.value);
+          formData.append('unit', unit.value);
+          formData.append('remark', remark.value);
+          formData.append('image', image.value);
+          axios.post('./controllers/addStamp.php', formData, {
+            
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
+          })
+            .then((response) => {
+              if (response.data.success) {
+                stamps.value = response.data.stampData;
+                message.value = response.data.message;
+                success.value = true;
+                console.log(response.data.message);
+              } else {
+                message.value = response.data.message;
+                success.value = false;
+                console.log(response.data.message)
+
+              }
+            })
+            .catch((error) => {
+              console.error('error', error);
+              success.value = false;
+            })
+            .finally(() => isLoading.value = false);
+        }
+
+
+        // edit
+        const isEditing = ref(false);
+        const newCountry = ref('');
+        const newYear = ref('');
+        const newPrice = ref('');
+        const newUnit = ref('');
+        const newRemark = ref('');
+        const newImage = ref('');
+
+        function selectNewFile(event) {
+          newImage.value = event.target.files[0];
+        }
+        function editStamp(stamp) {
+          // console.log(stamp);
+          stamp.edit = true;
+          isEditing.value = true;
+          newCountry.value = stamp.country_id;
+          newYear.value = stamp.year;
+          newPrice.value = stamp.price;
+          newUnit.value = stamp.unit;
+          newRemark.value = stamp.remark;
+          newImage.value = stamp.img;
+        }
+
+        function cancelEdit(stamp) {
+          stamp.edit = false;
+          isEditing.value = false;
+        }
+
+
+        function updateStamp(stamp) {
+          isLoading.value = true;
+          stamp.edit = false;
+          isEditing.value = false;
+
+          const formData = new FormData();
+          formData.append('country', newCountry.value,);
+          formData.append('id', stamp.id);
+          formData.append('price', newPrice.value);
+          formData.append('year', newYear.value);
+          formData.append('unit', newUnit.value);
+          formData.append('remark', newRemark.value);
+          formData.append('image', newImage.value);
+          axios.post('./controllers/updateStamp.php', formData, {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
+          })
+            .then((response) => {
+              if (response.data.success) {
+                // stamps.value = response.data.stampData;
+                message.value = response.data.message;
+                success.value = true;
+                console.log(response.data.message);
+              } else {
+                message.value = response.data.message;
+                success.value = false;
+                console.log(response.data.message)
+
+              }
+            })
+            .catch((error) => {
+              console.error('error', error);
+              success.value = false;
+            })
+            .finally(() => isLoading.value = false);
+        }
+
+        // Go top
+        const showGoTop = ref(false);
+
+        const handleScroll = () => {
+          showGoTop.value = window.scrollY > 100;
+        };
+
+        const goTop = () => {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+
+        onMounted(() => {
+          window.addEventListener('scroll', handleScroll);
+        });
+
+        return {
+          countries,
+          selectedCountry,
+          year,
+          price,
+          stamps,
+          image,
+          remark,
+          unit,
+          message,
+          isLoading,
+          success,
+          showGoTop,
+          isEditing,
+          newCountry,
+          newYear,
+          newPrice,
+          newUnit,
+          newRemark,
+          newImage,
+          checkStamp,
+          selectFile,
+          addStamp,
+          goTop,
+          handleScroll,
+          editStamp,
+          cancelEdit,
+          updateStamp,
+          selectNewFile
+
+        };
+      }
+    });
+    app.mount('#app');
+  });
+  </script>
+</body>
+
+</html>
