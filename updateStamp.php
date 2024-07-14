@@ -1,6 +1,6 @@
 <?php
 header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: POST");
+header("Access-Control-Allow-Methods: POST, GET, OPTIONS");
 header("Content-Type: multipart/form-data; charset=UTF-8");
 
 require_once("../controllers/connections/conn_db.php");
@@ -20,30 +20,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $imageName = $queryImageName->fetch();
         if ($imageName) {
             // echo 'file fetched';
-            // echo $_FILES['image']['name'];
-            $fileName = pathinfo($imageName[0])['filename']. '.'. pathinfo($_FILES['image']['name'])['extension'];
-            // echo $fileName;
+            // echo $_FILES['image'];
+            $fileName = pathinfo($imageName[0])['filename']. '.'. pathinfo($imageName[0])['extension'];
             $fileMoved = move_uploaded_file($_FILES['image']['tmp_name'], '../images/stamps/'.$fileName);
-            $sqlImage = sprintf("UPDATE stamp SET img='%s' WHERE id=%d", $fileName, $id);
-            $queryImage = $link->query($sqlImage);
         }
     }
+    
 
     if ($country !== NULL){
-        // $sql = sprintf("UPDATE stamp SET country_id=%d, price=%d, year=%d, unit='%s', remark='%s' WHERE id=%d", $country, $price, $year, $unit, $remark, $id);
-        $sql = "UPDATE stamp SET country_id=?, price=?, year=?, unit=?, remark=? WHERE id=?";
-        $params = [ $country, $price, $year, $unit, $remark, $id ];        
+        echo $country;
+        $sql = sprintf("UPDATE stamp SET country_id=%d, price=%d, year=%d, unit='%s', remark='%s' WHERE id=%d", $country, $price, $year, $unit, $remark, $id);
     } else {
-        // $sql = sprintf("UPDATE stamp SET price=%d, year=%d, unit='%s', remark='%s' WHERE id=%d", $price, $year, $unit, $remark, $id);
-        $sql = "UPDATE stamp SET price=?, year=?, unit=?, remark=? WHERE id=?";
-        $params = [ $price, $year, $unit, $remark, $id ];
+        $sql = sprintf("UPDATE stamp SET price=%d, year=%d, unit='%s', remark='%s' WHERE id=%d", $price, $year, $unit, $remark, $id);
     }
-    // $query = $link->query($sql);
-    $stmt = $link->prepare($sql);
-    if ($stmt) {
-        $query = $stmt->execute($params);
-    }
-
+    $query = $link->query($sql);
     if ($query) {
         $sqlUpdate = sprintf("SELECT * FROM stamp WHERE id =%d", $id);
         $queryUpdate = $link->query($sqlUpdate);

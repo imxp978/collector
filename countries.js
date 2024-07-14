@@ -25,7 +25,7 @@ export const countries = [
     { "id": "24", "code": "BR", "name": "Brazil", "c_name": "巴西" },
     { "id": "25", "code": "BN", "name": "Brunei Darussalam", "c_name": "汶萊" },
     { "id": "26", "code": "BG", "name": "Bulgaria", "c_name": "保加利亞" },
-    { "id": "27", "code": "BF", "name": "Burkina Faso", "c_name": "有吉納法索" },
+    { "id": "27", "code": "BF", "name": "Burkina Faso", "c_name": "布吉納法索" },
     { "id": "28", "code": "BI", "name": "Burundi", "c_name": "蒲隆地" },
     { "id": "29", "code": "KH", "name": "Cambodia", "c_name": "柬埔寨" },
     { "id": "30", "code": "CM", "name": "Cameroon", "c_name": "喀麥隆" },
