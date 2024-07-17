@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Check Envelope</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous" />
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
+    crossorigin="anonymous"></script>
+  <style>
+    * {
+      word-wrap:break-word;
+    }
+
+    body {
+      background-color: #ffffff;
+    }
+
+    img {
+      max-width: 200px;
+      max-height: 250px;
+    }
+
+    .container {
+      background-color: rgb(242, 241, 238);
+      border-radius: 20px;
+    }
+
+    .loader {
+      margin: 0 auto;
+      border: 10px solid #f3f3f3;
+      border-top: 10px solid #3498db;
+      border-radius: 50%;
+      width: 48px;
+      height: 48px;
+      animation: spin 0.3s linear infinite;
+      z-index: 1;
+    }
+
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+    /* gotop */
+    #gotop {
+      background: rgba(0, 0, 0, 0.2) !important;
+      cursor: pointer;
+    }
+
+    #gotop:hover {
+      color: black !important;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app">
+    <!-- query & add -->
+    <div class="container mt-2 mb-4 p-5">
+      <h3 class="text-center">Check / Add Envelope</h3>
+      <hr>
+      <div class="row d-flex justify-content-center">
+        <div class="col-12 row">
+          <div class="col-6">
+            <select v-model.number="sendCountry" class="form-control mb-3" value="" autofocus required>
+              <option value="" selected disabled>寄出國家 From From</option>
+              <option v-for="country in countries" :key="country.id" :value="country.id">{{ country.code }} | {{
+                country.name }} {{ country.c_name }}</option>
+            </select>
+          </div>
+          <div class="col-6">
+            <div class="text-end">
+              <button @click="checkEnvelope" class="btn btn-dark">查閱郵封</button><br>
+            </div>
+          </div>  
+        </div>
+        <hr>
+        <div class="col-12 row">
+          <div class="col-6">
+            <select v-model.number="toCountry" class="form-control mb-3" value="">
+              <option value="" selected disabled>寄往國家 From To</option>
+              <option v-for="country in countries" :key="country.id" :value="country.id">{{ country.code }} | {{
+                country.name }} {{ country.c_name }}</option>
+            </select>
+            <input type="text" class="form-control mb-1" v-model="sendCity" placeholder="寄出城市 City From" />
+            <input type="text" class="form-control mb-1" v-model="sendZip" placeholder="寄出郵遞區號 Zip From" />
+            <input type="text" class="form-control mb-1" v-model="toCity" placeholder="寄往城市 City To" />
+            <input type="text" class="form-control mb-1" v-model="toZip" placeholder="寄往郵遞區號 Zip To" />
+            <input type="text" class="form-control mb-1" v-model="sendTime" placeholder="郵戳時間 From Time (DDMMYY)" />
+            <select v-model.number="type" class="form-control">
+              <option value="" selected disabled>郵封類型 Type</option>
+              <option v-for="type in types" :key=type.id :value="type.id">{{ type.type }}</option>
+            </select>
+          </div>
+          <div class="col-6">
+            <input type="text" class="form-control mb-1" v-model="theme" placeholder="主題 Theme" />
+
+            <textarea v-model="remark" placeholder="輸入備註 Remark" class="form-control mb-1" rows="4"></textarea>
+            <input type="file" class="form-control mb-3" multiple @change="selectFile1" accept="image/*" />
+            <input type="file" class="form-control mb-3" multiple @change="selectFile2" accept="image/*" />
+            <input type="file" class="form-control mb-3" multiple @change="selectFile3" accept="image/*" />
+            <div class="text-end">
+              <button @click="addEnvelope" class="btn btn-dark">新增郵封 </button><br>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- thumbnail -->
+    <div class="container mb-4 p-5">
+      <div v-if="isLoading" class="loader"></div>
+      <div v-else>
+        <h3 class="my-2 text-center" :class="success? 'text-primary': 'text-danger'">{{ message }}</h3>
+        <div class="col-12 row">
+          <div class="col-2" v-for="i in envelopes" :key="i.id">
+            <hr class="mt-2">
+            <p>[{{ countries[i.country_from - 1].c_name }}] >> [{{ i.country_to? countries[i.country_to - 1].c_name :'' }}] | {{ i.img.length ? i.img[0].img : '' }}</p>
+            <a :href="'#' + i.id"><img v-if="i.img.length" :src="'images/envelopes/' + i.img[0].img" class="img-fluid"></a>
+          </div>
+          
+        </div>
+      </div>
+      </div>
+    <!-- detail -->
+    <div class="container p-5"  v-if="envelopes && envelopes.length > 0" >
+      <div class="row">
+        <div v-for="i in envelopes" :key="i.id">
+          <a :name="i.id"></a>         
+          <!-- edit -->
+          <div class="col-12 mx-auto text-end" v-if="i.edit">
+            <button class="btn btn-outline-dark btn-sm" @click="cancelEdit(i)">取消</button>
+            <div class="row">
+              <div class="col-6 row">
+                <div class="col-12 text-start">FROM：<hr></div>
+                <div class="col-2 text-end">國家：</div>
+                <div class="col-10">
+                  <select v-model.number="newFromCountry" class="form-control form-control-sm" value="" >
+                    <option value="" selected disabled>選擇國家 Country</option>
+                    <option v-for="country in countries" :key="country.id" :value="country.id">{{ country.code }} | {{ country.name }} {{ country.c_name }}</option>
+                  </select>
+                </div><br>
+
+                <div class="col-2 text-end">城市：</div>
+                <div class="col-10"><input type="text" class="form-control form-control-sm" v-model="newFromCity"></div><br>
+                <div class="col-2 text-end">Zip：</div>
+                <div class="col-10"><input type="text" class="form-control form-control-sm" v-model="newFromZip"></div><br>
+              </div>
+              <div class="col-6 row">
+                <div class="col-12 text-start">TO：<hr></div>
+                <div class="col-2 text-end">國家：</div>
+                <div class="col-10">
+                  <select v-model.number="newToCountry" class="form-control form-control-sm" value="" >
+                    <option value="" selected disabled>選擇國家 Country</option>
+                    <option v-for="country in countries" :key="country.id" :value="country.id">{{ country.code }} | {{ country.name }} {{ country.c_name }}</option>
+                  </select>
+                </div><br>
+                <div class="col-2 text-end">城市：</div>
+                <div class="col-10"><input type="text" class="form-control form-control-sm" v-model="newToCity"></div><br>
+                <div class="col-2 text-end">Zip：</div>
+                <div class="col-10"><input type="text" class="form-control form-control-sm" v-model="newToZip"></div><br>
+              </div>
+              <hr class="mt-3">
+              <div class="col-6 row">
+                <div class="col-2 text-end">時間：</div>
+                <div class="col-10">
+                  <input type="text" class="form-control form-control-sm" v-model="newSendTime">
+                </div>
+                <div class="col-2 text-end">備註：</div>
+                <div class="col-10">
+                  <textarea v-model="newRemark" class="form-control form-control-sm" rows="4"></textarea>
+                </div>
+              </div>
+              <div class="col-6 row">
+                <div class="col-2 text-end">主題：</div>
+                <div class="col-10">
+                  <input type="text" class="form-control form-control-sm" v-model="newTheme">
+                </div>
+                <div class="col-2 text-end">圖檔：</div>
+                <div class="col-10 row">
+                  <div class="col-12"><input type="file" class="form-control form-control-sm" @change="selectNewFile1"></div><br>
+                  <div class="col-12"><input type="file" class="form-control form-control-sm" @change="selectNewFile2"></div><br>
+                  <div class="col-12"><input type="file" class="form-control form-control-sm" @change="selectNewFile3"></div><br>
+                </div>
+              </div>
+            </div> 
+            <button class="btn btn-dark btn-sm" @click="updateEnvelope(i)">儲存</button> 
+            <hr>
+          </div>
+
+          <!-- display -->
+          <div class="col-12" v-else :key="i.id" >
+            <div v-if="!isEditing" class="text-end">
+              <button @click="editEnvelope(i)" class="btn btn-outline-dark btn-sm">編輯</button>
+            </div>
+            <h5>
+              {{ countries[i.country_from-1].name }}, {{ countries[i.country_from-1].c_name }}| {{ i.img.length ? i.img[0].img : '' }}
+            </h5>
+            <p>[主題]: {{ i.theme }}</p>
+            <p>[寄出]: {{ i.city_from}} ({{i.zip_from }}) <br> [寄往]: {{ i.city_to }} ({{ i.zip_to }})</p>
+            <p>郵戳時間: {{ i.time }}</p>
+            <p>{{ i.remark }}</p>
+            <img v-for="j in i.img" :key="j.id" :src="'images/envelopes/' + j.img" class="img-fluid mx-2">
+            <hr>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- gotop -->
+    <div class="text-end">
+      <div v-if="showGoTop" @click="goTop" id="gotop"
+        class="position-fixed bottom-0 end-0 p-3 mb-4 me-4 bg-light text-white bg-opacity-10 rounded">
+        Go Top
+      </div>
+    </div>
+
+  </div>
+
+  <script type="module">
+    const { createApp, ref, reactive, onMounted } = Vue;
+    import { countries } from './countries.js';
+    import { types } from './types.js';
+    // import axios from 'axios';  
+
+    const app = createApp({
+      setup() {
+
+        let envelopes = ref([]);
+        const type = ref('');
+        const sendCountry = ref('');
+        const sendCity = ref('');
+        const sendZip = ref('');
+        const toCountry = ref('');
+        const toCity = ref('');
+        const toZip = ref('');
+        const remark = ref('');
+        const sendTime = ref('');
+        const theme = ref('');
+        const image1 = ref('');
+        const image2 = ref('');
+        const image3 = ref('');
+        const message = ref('輸入查詢條件');
+        const isLoading = ref(false);
+        const success = ref(false);
+
+        // check envelope
+        async function checkEnvelope() {
+          try {
+            isLoading.value = true;
+            console.log('===== query begin =====')
+            if (sendCountry.value !== ''){
+              console.log('send country:', sendCountry.value);
+              console.log('country:', countries[sendCountry.value - 1].name, countries[sendCountry.value - 1].c_name);
+            }
+  
+            const queryUrl = `./controllers/checkEnvelope.php?country=${sendCountry.value}`;
+            console.log('sendCountry: ', sendCountry);
+            const response = await axios.get(queryUrl);
+          
+            if (response.data.success) {
+              message.value = response.data.message;
+              envelopes.value = response.data.envelopeData.map(envelope => ({
+                  ...envelope, edit: false
+                }));
+              success.value = true;
+            } else {
+              console.log('failed');
+              envelopes.value = [];
+              message.value = response.data.message;
+              success.value = false;
+              // console.log('sql: ', response.data.sql);
+              console.log(response.data.message);
+            }
+              
+          } catch(error) {
+              message.value = error.message;
+              success.value = false;
+              // console.log('sql: ', response.data.sql)
+              console.error('error: ', error);
+          } finally {
+            isLoading.value = false;
+          }
+          console.log('envelopes: ', envelopes.value);
+        };
+
+        // add envelope
+        function selectFile1(event) {
+          image1.value = event.target.files[0];
+          console.log(event.target.files);
+        }
+        function selectFile2(event) {
+          image2.value = event.target.files[0];
+          console.log(event.target.files);
+        }
+        function selectFile3(event) {
+          image3.value = event.target.files[0];
+          console.log(event.target.files);
+        }
+        
+        async function addEnvelope() {
+          isLoading.value = true;
+
+          const formData = new FormData();
+          formData.append('sendCountry', sendCountry.value,);
+          formData.append('sendCity', sendCity.value);
+          formData.append('sendZip', sendZip.value);
+          formData.append('toCountry', toCountry.value,);
+          formData.append('toCity', toCity.value);
+          formData.append('toZip', toZip.value);
+          formData.append('remark', remark.value);
+          formData.append('sendTime', sendTime.value);
+          formData.append('theme', theme.value);
+          formData.append('type', type.value);
+          formData.append('image1', image1.value);
+          formData.append('image2', image2.value);
+          formData.append('image3', image3.value);
+          try {
+            const response = await axios.post('./controllers/addEnvelope.php', formData, {
+              headers: {
+                'Content-Type': 'multipart/form-data',
+              },
+            })
+            if (response.data.success) {
+              message.value = response.data.message;
+              envelopes.value = response.data.envelopeData.map(envelope => ({
+                  ...envelope, edit: false
+                }));
+              success.value = true;
+            }
+          } catch(error) {
+            message.value = error.message;
+            success.value = false;
+            console.error('error', error);
+          } finally {
+            isLoading.value = false;
+            // checkEnvelope();
+          }
+        }
+
+        // edit envelope
+        const isEditing = ref(false);
+        const newFromCountry = ref('');
+        const newFromCity = ref('');
+        const newFromZip = ref('');
+        const newToCountry = ref('');
+        const newToCity = ref('');
+        const newToZip = ref('');
+        const newSendTime = ref('');
+        const newTheme = ref('');
+        const newRemark = ref('');
+        const newImage1 = ref('');
+        const newImage2 = ref('');
+        const newImage3 = ref('');
+
+        function selectNewFile(event) {
+          newImage.value = event.target.files[0];
+        }
+
+        function editEnvelope(envelope) {
+          // console.log(stamp);
+          envelope.edit = true;
+          isEditing.value = true;
+          newFromCountry.value = envelope.country_from;
+          newFromCity.value = envelope.city_from;
+          newFromZip.value = envelope.zip_from;
+          newToCountry.value = envelope.country_to;
+          newToCity.value = envelope.city_to;
+          newToZip.value = envelope.zip_to;
+          newSendTime.value = envelope.time;
+          newTheme.value = envelope.theme;
+          newRemark.value = envelope.remark;
+        }
+
+        function cancelEdit(envelope) {
+          envelope.edit = false;
+          isEditing.value = false;
+        }
+
+        function updateEnvelope(stamp) {
+          isLoading.value = true;
+          stamp.edit = false;
+          isEditing.value = false;
+
+          const formData = new FormData();
+          formData.append('country', newCountry.value,);
+          formData.append('id', stamp.id);
+          formData.append('price', newPrice.value);
+          formData.append('year', newYear.value);
+          formData.append('unit', newUnit.value);
+          formData.append('remark', newRemark.value);
+          formData.append('image', newImage.value);
+          axios.post('./controllers/updateStamp.php', formData, {
+
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
+          })
+            .then((response) => {
+              if (response.data.success) {
+                // stamps.value = response.data.stampData;
+                message.value = response.data.message;
+                success.value = true;
+                console.log(response.data.message);
+              } else {
+                message.value = response.data.message;
+                success.value = false;
+                console.log(response.data.message)
+              }
+            })
+            .catch((error) => {
+              console.error('error', error);
+              success.value = false;
+            })
+            .finally(() => isLoading.value = false);
+        }
+
+        // Go top
+        const showGoTop = ref(false);
+
+        function handleScroll () {
+          showGoTop.value = window.scrollY > 100;
+        };
+
+        function goTop ()  {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+
+        onMounted(() => {
+          window.addEventListener('scroll', handleScroll);
+        });
+
+        return {
+          // check envelope
+          envelopes,
+          countries,
+          type,
+          types,
+          sendCountry,
+          success,
+          message,
+          checkEnvelope,
+          
+          // add envelope
+          isLoading,
+          sendCity,
+          sendZip,
+          toCountry,
+          toCity,
+          toZip,
+          remark,
+          sendTime,
+          theme,
+          image1,
+          image2,
+          image3,
+          selectFile1,
+          selectFile2,
+          selectFile3,
+          addEnvelope,
+
+          // edit envelope
+          isEditing,
+          newFromCountry,
+          newFromCity,
+          newFromZip,
+          newToCountry,
+          newToCity,
+          newToZip,
+          newSendTime,
+          newTheme,
+          newRemark,
+          newImage1,
+          newImage2,
+          newImage3,
+          editEnvelope,
+          cancelEdit,
+          updateEnvelope,
+          selectNewFile,
+
+          // go top
+          showGoTop,
+          goTop,
+          handleScroll,
+        }
+      }
+    }
+    
+  
+  );
+    app.mount('#app');
+  
+  </script>
+</body>
+
+</html>

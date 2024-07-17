@@ -117,7 +117,7 @@
           <div class="col-12 mx-auto text-end" v-if="i.edit">
             <button class="btn btn-outline-dark btn-sm" @click="cancelEdit(i)">取消</button>
             <div class="row">
-              <div class="col-6 row">
+              <div class="col-12 col-lg-6 row">
                 <div class="col-2 text-end">國家：</div>
                 <div class="col-10">
                   <select v-model.number="newCountry" class="form-control form-control-s" value="" >
@@ -130,7 +130,7 @@
                 <div class="col-2 text-end">面額：</div>
                 <div class="col-10"><input type="text" class="form-control form-control-s" v-model="newPrice"></div><br>
               </div>
-              <div class="col-6 row">
+              <div class="col-12 col-lg-6 row">
                 <div class="col-2 text-end">單位：</div>
                 <div class="col-10"><input type="text" class="form-control form-control-s" v-model="newUnit"></div><br>
                 <div class="col-2 text-end">備註：</div>
@@ -188,7 +188,7 @@
         const isLoading = ref(false);
         const success = ref(false);
 
-        // check
+        // check stamp
         function checkStamp() {
           isLoading.value = true;
           console.log('===== query begin =====')
@@ -198,8 +198,7 @@
           console.log('year:', year.value);
           console.log('price:', price.value);
 
-          // const queryUrl = `./controllers/checkStamp.php?country=${selectedCountry.value}&year=${year.value}&price=${price.value}`
-          const queryUrl = `http://localhost:8888/git-files/dr_c_collector/dr_c_collector/controllers/checkStamp.php?country=${selectedCountry.value}&year=${year.value}&price=${price.value}`
+          const queryUrl = `./controllers/checkStamp.php?country=${selectedCountry.value}&year=${year.value}&price=${price.value}`
 
           axios.get(queryUrl)
             .then((response) => {
@@ -228,7 +227,7 @@
             .finally(() => isLoading.value = false);
         }
 
-        // add 
+        // add stamp
         function selectFile(event) {
           image.value = event.target.files[0];
           console.log(event.target.files);
@@ -271,7 +270,7 @@
             .finally(() => isLoading.value = false);
         }
 
-        // edit
+        // edit stamp
         const isEditing = ref(false);
         const newCountry = ref('');
         const newYear = ref('');
@@ -356,18 +355,25 @@
         });
 
         return {
+          // check stamp
           countries,
           selectedCountry,
+          message,
+          isLoading,
+          success,
+          checkStamp,
+
+          // add stamp
           year,
           price,
           stamps,
           image,
           remark,
           unit,
-          message,
-          isLoading,
-          success,
-          showGoTop,
+          selectFile,
+          addStamp,
+          
+          // edit stamp
           isEditing,
           newCountry,
           newYear,
@@ -375,15 +381,15 @@
           newUnit,
           newRemark,
           newImage,
-          checkStamp,
-          selectFile,
-          addStamp,
-          goTop,
-          handleScroll,
           editStamp,
           cancelEdit,
           updateStamp,
-          selectNewFile
+          selectNewFile,
+          
+          // go top
+          showGoTop,
+          goTop,
+          handleScroll,
 
         };
       }

@@ -1,6 +1,5 @@
 <?php
 header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: GET");
 header("Content-Type: application/json; charset=UTF-8");
 
 require_once("../controllers/connections/conn_db.php");
@@ -31,6 +30,8 @@ $where = count($condition) > 0 ? ' WHERE ' :'';
 
 $sql = "SELECT * FROM stamp" . $where . implode(' AND ', $condition) . " ORDER BY id DESC";
 
+// $sql = sprintf("SELECT * FROM stamp WHERE country_id = %d AND year = %s AND price = %d", $country, $year, $price);
+// $sql = "SELECT * FROM stamp";
 $stmt = $link->prepare($sql);
 if ($stmt) {
     $query = $stmt->execute($params);

@@ -1,5 +1,6 @@
 <?php 
 header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Methods: POST, GET, OPTIONS");
 header("Content-Type: multipart/form-data; charset=UTF-8");
 
 require_once("../controllers/connections/conn_db.php");
@@ -31,7 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 if ($query) {
                     $sqlUpdate = sprintf("SELECT * FROM stamp WHERE country_id = %d AND year = %s AND price = %d ORDER BY id DESC" , $country, $year, $price);
                     $queryUpdate = $link->query($sqlUpdate);
-                    $stamps = $queryUpdate->fetchAll();
+                    $stamps = $queryUpdate->fetchAll(PDO::FETCH_ASSOC);
                     if ($stamps) {
                         $data = array(
                             'success' => true,
