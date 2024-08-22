@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Check Stamp</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC"
+      crossorigin="anonymous"
+    />
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
+      crossorigin="anonymous"
+    ></script>
+    <style>
+      * {
+        margin: 15px;
+      }
+      img {
+        max-width: 100% !important;
+        max-height: 250px !important;
+      }
+      div {
+        word-break: break-all;
+      }
+      .container {
+        background-color: lightgray;
+        border-radius: 10px;
+        box-shadow: 1px 1px 5px 1px gray;
+      }
+      .loader {
+        margin: 0 auto;
+        border: 10px solid #f3f3f3; 
+        border-top: 10px solid #3498db; 
+        border-radius: 50%;
+        width: 48px;
+        height: 48px;
+        animation: spin 0.3s linear infinite;
+        z-index: 1;
+      }
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      #gotop {
+        background: rgba(0,0,0,0.2) !important;
+        cursor: pointer;
+      }
+      #gotop:hover {
+        color: black !important;
+      }
+      
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <div class="container mt-0 mb-3">
+        <h3 class="text-center">Check / Add Stamp</h3>
+        <div class="row d-flex justify-content-center">
+          <div class="col-xl-6">
+            
+            <select v-model="selectedCountry" class="form-control mb-3" value="" autofocus required>
+              <option value="" selected disabled>選擇國家 Country</option>
+              <option v-for="country in countries" :key="country.id" :value="country.id">{{ country.code }} | {{ country.name }} {{ country.c_name }}</option>
+            </select>
+            
+            <input type="text" class="form-control mb-3" v-model="year" placeholder="輸入年分 Year" />
+            <input type="text" class="form-control mb-3" v-model="price" placeholder="輸入面額 Price" />
+            <div class="text-end">
+              <button @click="checkStamp" class="btn btn-dark">查閱郵票</button><br>
+            </div>
+            <hr>
+            
+            <input type="text" class="form-control mb-3" v-model="unit" placeholder="輸入貨幣 Unit" />
+            <input type="text" class="form-control mb-3" v-model="remark" placeholder="輸入備註 Remark" />
+            <input type="file" class="form-control mb-3" @change="selectFile" placeholder="輸入檔名 Image" />
+            <div class="text-end">
+              <button @click="addStamp" class="btn btn-dark">新增郵票</button><br>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="container mb-3" >
+        <div v-if="isLoading" class="loader"></div>
+        <div v-else>
+          <h3 class="my-2 text-center" :class="success? 'text-primary': 'text-danger'">{{ message }}</h3>
+        </div>
+        <hr class="mb-3">
+        <div class="row">
+          <div v-if="stamps && stamps.length > 0" v-for="i in stamps" :key="i.id" class="col-12">
+            <!-- <button class="btn btn-sm btn-outline-dark" >編輯</button> -->
+            <button class="btn btn-sm btn-outline-dark" @click="editStamp(i)">編輯</button>
+              <div v-if="i.edit">
+                <input type="text" :value="i.year">
+                <input type="text" :value="i.year">
+                <input type="text" :value="i.year">
+              </div>
+            
+              <div v-else>
+                <h5>
+                  {{ countries[i.country_id-1].name }}, {{ countries[i.country_id-1].c_name }} | {{ i.year }} | {{ i.price }} {{ i.unit }} | {{ i.img }}
+                </h5>
+                <p class="mx-3">{{ i.remark }}</p>
+                <div class="col-12">
+                  <img :src=`images/stamps/${i.img}` class="img-fluid" >
+                </div>
+                <hr>
+              </div>  
+        </div>
+      </div>
+
+
+      <div class="text-end">
+        <div v-if="showGoTop" @click="goTop" id="gotop" class="position-fixed bottom-0 end-0 p-3 mb-4 me-4 bg-light text-white bg-opacity-10 rounded">
+         Go Top
+        </div>
+      </div>
+
+    </div>
+
+    <script>
+        const { createApp, ref, onMounted } = Vue;
+        
+        const app = createApp({
+          setup() {
+            const countries = [
+                {"id":"1","code":"AL","name":"Albania","c_name":"阿爾巴尼亞"},
+                {"id":"2","code":"DZ","name":"Algeria","c_name":"阿爾及利亞"},
+                {"id":"3","code":"AO","name":"Angola","c_name":"安哥拉"},
+                {"id":"4","code":"AI","name":"Anguilla","c_name":"安圭拉"},
+                {"id":"5","code":"AR","name":"Argentina","c_name":"阿根廷"},
+                {"id":"6","code":"AM","name":"Armenia","c_name":"亞美尼亞"},
+                {"id":"7","code":"AW","name":"Aruba","c_name":"阿路巴"},
+                {"id":"8","code":"AU","name":"Australia","c_name":"澳大利亞"},
+                {"id":"9","code":"AT","name":"Austria","c_name":"奧地利"},
+                {"id":"10","code":"AZ","name":"Azerbaijan","c_name":"亞塞拜然"},
+                {"id":"11","code":"BS","name":"Bahamas","c_name":"巴哈馬"},
+                {"id":"12","code":"BH","name":"Bahrain","c_name":"巴林"},
+                {"id":"13","code":"BD","name":"Bangladesh","c_name":"孟加拉"},
+                {"id":"14","code":"BB","name":"Barbados","c_name":"巴貝多"},
+                {"id":"15","code":"BY","name":"Belarus","c_name":"白俄羅斯"},
+                {"id":"16","code":"BE","name":"Belgium","c_name":"比利時"},
+                {"id":"17","code":"BZ","name":"Belize","c_name":"貝里斯"},
+                {"id":"18","code":"BJ","name":"Benin","c_name":"貝南"},
+                {"id":"19","code":"BM","name":"Bermuda","c_name":"百慕達"},
+                {"id":"20","code":"BT","name":"Bhutan","c_name":"不丹"},
+                {"id":"21","code":"BO","name":"Bolivia","c_name":"玻利維亞"},
+                {"id":"22","code":"BA","name":"Bosnia and Herzegovina","c_name":"波希尼亞及赫塞哥維那"},
+                {"id":"23","code":"BW","name":"Botswana","c_name":"波札那"},
+                {"id":"24","code":"BR","name":"Brazil","c_name":"巴西"},
+                {"id":"25","code":"BN","name":"Brunei Darussalam","c_name":"汶萊"},
+                {"id":"26","code":"BG","name":"Bulgaria","c_name":"保加利亞"},
+                {"id":"27","code":"BF","name":"Burkina Faso","c_name":"有吉納法索"},
+                {"id":"28","code":"BI","name":"Burundi","c_name":"蒲隆地"},
+                {"id":"29","code":"KH","name":"Cambodia","c_name":"柬埔寨"},
+                {"id":"30","code":"CM","name":"Cameroon","c_name":"喀麥隆"},
+                {"id":"31","code":"CA","name":"Canada","c_name":"加拿大"},
+                {"id":"32","code":"CV","name":"Cape Verde","c_name":"維德角島"},
+                {"id":"33","code":"KY","name":"Cayman Islands","c_name":"開曼群島"},
+                {"id":"34","code":"CF","name":"Central African Rep","c_name":"中非共和國"},
+                {"id":"35","code":"TD","name":"Chad","c_name":"查德"},
+                {"id":"36","code":"CL","name":"Chile","c_name":"智利"},
+                {"id":"37","code":"CN","name":"China (People's Rep)","c_name":"中國大陸"},
+                {"id":"38","code":"CO","name":"Colombia","c_name":"哥倫比亞"},
+                {"id":"39","code":"CG","name":"Congo(Rep)","c_name":"剛果"},
+                {"id":"40","code":"CK","name":"Cook Islands","c_name":"科克群島"},
+                {"id":"41","code":"CR","name":"Costa Rica","c_name":"哥斯大黎加"},
+                {"id":"42","code":"CI","name":"Cote d'Ivoire (Rep)","c_name":"象牙海岸"},
+                {"id":"43","code":"HR","name":"Croatia","c_name":"克羅埃西亞"},
+                {"id":"44","code":"CY","name":"Cyprus","c_name":"塞浦路斯"},
+                {"id":"45","code":"CZ","name":"Czech (Rep)","c_name":"捷克"},
+                {"id":"46","code":"LU","name":"Luxembourg","c_name":"盧森堡"},
+                {"id":"47","code":"MO","name":"Macao","c_name":"澳門"},
+                {"id":"48","code":"MK","name":"Macedonia","c_name":"馬其頓"},
+                {"id":"49","code":"MG","name":"Madagascar","c_name":"馬達加斯加"},
+                {"id":"50","code":"MW","name":"Malawi","c_name":"馬拉威"},
+                {"id":"51","code":"MY","name":"Malaysia","c_name":"馬來西亞"},
+                {"id":"52","code":"MV","name":"Maldives","c_name":"馬爾地夫"},
+                {"id":"53","code":"ML","name":"Mali","c_name":"馬利"},
+                {"id":"54","code":"MT","name":"Malta","c_name":"馬爾他"},
+                {"id":"55","code":"MU","name":"Mauritius","c_name":"模里西斯"},
+                {"id":"56","code":"MR","name":"Mauritania","c_name":"茅利塔尼亞"},
+                {"id":"57","code":"MX","name":"Mexico","c_name":"墨西哥"},
+                {"id":"58","code":"MD","name":"Moldova","c_name":"摩爾多瓦"},
+                {"id":"59","code":"MN","name":"Mongolia","c_name":"蒙古"},
+                {"id":"60","code":"MA","name":"Morocco","c_name":"摩洛哥"},
+                {"id":"61","code":"MM","name":"Myanmar","c_name":"緬甸"},
+                {"id":"62","code":"NA","name":"Namibia","c_name":"納米比亞"},
+                {"id":"63","code":"NR","name":"Nauru","c_name":"諾魯"},
+                {"id":"64","code":"NP","name":"Nepal","c_name":"尼泊爾"},
+                {"id":"65","code":"NL","name":"Netherlands","c_name":"荷蘭"},
+                {"id":"66","code":"NC","name":"New Caledonia","c_name":"新喀里多尼亞"},
+                {"id":"67","code":"NZ","name":"New Zealand","c_name":"紐西蘭"},
+                {"id":"68","code":"NE","name":"Niger","c_name":"尼日"},
+                {"id":"69","code":"NG","name":"Nigeria","c_name":"奈及利亞"},
+                {"id":"70","code":"NO","name":"Norway","c_name":"挪威"},
+                {"id":"71","code":"OM","name":"Oman","c_name":"阿曼"},
+                {"id":"72","code":"PK","name":"Pakistan","c_name":"巴基斯坦"},
+                {"id":"73","code":"PA","name":"Panama","c_name":"巴拿馬"},
+                {"id":"74","code":"PG","name":"Papua New Guinea","c_name":"巴布亞紐幾內亞"},
+                {"id":"75","code":"PY","name":"Paraguay","c_name":"巴拉圭"},
+                {"id":"76","code":"PE","name":"Peru","c_name":"秘魯"},
+                {"id":"77","code":"PH","name":"Philippines","c_name":"菲律賓"},
+                {"id":"78","code":"PL","name":"Poland","c_name":"波蘭"},
+                {"id":"79","code":"PT","name":"Portugal","c_name":"葡萄牙"},
+                {"id":"80","code":"QA","name":"Qatar","c_name":"卡達"},
+                {"id":"81","code":"RO","name":"Romania","c_name":"羅馬尼亞"},
+                {"id":"82","code":"RU","name":"Russian Federation","c_name":"俄羅斯"},
+                {"id":"83","code":"RW","name":"Rwanda","c_name":"盧安達"},
+                {"id":"84","code":"KN","name":"Saint Christopher (St. Kitts) and Nevis","c_name":"聖克里斯多福及尼維斯"},
+                {"id":"85","code":"CD","name":"Dem Rep of Congo","c_name":"剛果"},
+                {"id":"86","code":"DK","name":"Denmark","c_name":"丹麥"},
+                {"id":"87","code":"DO","name":"Dominican Rep.","c_name":"多明尼加"},
+                {"id":"88","code":"DM","name":"Dominica (Commonwealth of)","c_name":"多米尼克"},
+                {"id":"89","code":"EC","name":"Ecuador","c_name":"厄瓜多爾"},
+                {"id":"90","code":"EG","name":"Egypt","c_name":"埃及"},
+                {"id":"91","code":"SV","name":"El Salvador","c_name":"薩爾瓦多"},
+                {"id":"92","code":"ER","name":"Eritrea","c_name":"厄利垂亞"},
+                {"id":"93","code":"EE","name":"Estonia","c_name":"愛沙尼亞"},
+                {"id":"94","code":"ET","name":"Ethiopia","c_name":"衣索匹亞"},
+                {"id":"95","code":"FJ","name":"Fiji","c_name":"斐濟"},
+                {"id":"96","code":"FI","name":"Finland","c_name":"芬蘭"},
+                {"id":"97","code":"PF","name":"French Polynesia","c_name":"法屬玻里尼西亞"},
+                {"id":"98","code":"FR","name":"France","c_name":"法國"},
+                {"id":"99","code":"GA","name":"Gabon","c_name":"加彭"},
+                {"id":"100","code":"GE","name":"Georgia","c_name":"喬治亞"},
+                {"id":"101","code":"DE","name":"Germany","c_name":"德國"},
+                {"id":"102","code":"GH","name":"Ghana","c_name":"迦納"},
+                {"id":"103","code":"GI","name":"Gibraltar","c_name":"直布羅陀"},
+                {"id":"104","code":"UK","name":"United Kingdom of Great Britain and Northern Ireland","c_name":"英國"},
+                {"id":"105","code":"GR","name":"Greece","c_name":"希臘"},
+                {"id":"106","code":"GD","name":"Grenada","c_name":"格瑞那達"},
+                {"id":"107","code":"GT","name":"Guatemala","c_name":"瓜地馬拉"},
+                {"id":"108","code":"GN","name":"Guinea","c_name":"幾內亞"},
+                {"id":"109","code":"GY","name":"Guyana","c_name":"蓋亞那"},
+                {"id":"110","code":"HA","name":"Haiti","c_name":"海地"},
+                {"id":"111","code":"HN","name":"Honduras","c_name":"宏都拉斯"},
+                {"id":"112","code":"HK","name":"Hong Kong","c_name":"香港"},
+                {"id":"113","code":"HU","name":"Hungary","c_name":"匈牙利"},
+                {"id":"114","code":"IS","name":"Iceland","c_name":"冰島"},
+                {"id":"115","code":"IN","name":"India","c_name":"印度"},
+                {"id":"116","code":"ID","name":"Indonesia","c_name":"印尼"},
+                {"id":"117","code":"IR","name":"Iran","c_name":"依朗"},
+                {"id":"118","code":"IQ","name":"Iraq","c_name":"伊拉克"},
+                {"id":"119","code":"IE","name":"Ireland","c_name":"愛爾蘭"},
+                {"id":"120","code":"IL","name":"Israel","c_name":"以色列"},
+                {"id":"121","code":"IT","name":"Italy","c_name":"義大利"},
+                {"id":"122","code":"JM","name":"Jamaica","c_name":"牙買加"},
+                {"id":"123","code":"JP","name":"Japan","c_name":"日本"},
+                {"id":"124","code":"JO","name":"Jordan","c_name":"約旦"},
+                {"id":"125","code":"KE","name":"Kenya","c_name":"肯亞"},
+                {"id":"126","code":"KR","name":"Korea (Rep)","c_name":"韓國"},
+                {"id":"127","code":"KW","name":"Kuwait","c_name":"科威特"},
+                {"id":"128","code":"LA","name":"Lao People's Dem Rep","c_name":"寮國"},
+                {"id":"129","code":"LV","name":"Latvia","c_name":"拉脫維亞"},
+                {"id":"130","code":"LS","name":"Lesotho","c_name":"賴索托"},
+                {"id":"131","code":"LC","name":"Saint Lucia","c_name":"聖露西亞"},
+                {"id":"132","code":"VC","name":"Saint Vincent and the Grenadines","c_name":"聖文森及格瑞那丁"},
+                {"id":"133","code":"ST","name":"Sao Tome and Principe","c_name":"聖多美及普林西比"},
+                {"id":"134","code":"SA","name":"Saudi Arabia","c_name":"沙烏地阿拉伯"},
+                {"id":"135","code":"SN","name":"Senegal","c_name":"塞內加爾"},
+                {"id":"136","code":"SC","name":"Seychelles","c_name":"塞席爾"},
+                {"id":"137","code":"SL","name":"Sierra Leone","c_name":"獅子山"},
+                {"id":"138","code":"SG","name":"Singapore","c_name":"新加坡"},
+                {"id":"139","code":"SK","name":"Slovakia","c_name":"斯洛伐克"},
+                {"id":"140","code":"SI","name":"Slovenia","c_name":"斯洛維尼亞"},
+                {"id":"141","code":"SB","name":"Solomon Islands","c_name":"索羅門群島"},
+                {"id":"142","code":"SO","name":"Somalia","c_name":"索馬利亞"},
+                {"id":"143","code":"ZA","name":"South Africa","c_name":"南非"},
+                {"id":"144","code":"ES","name":"Spain","c_name":"西班牙"},
+                {"id":"145","code":"LK","name":"Sri Lanka","c_name":"斯里蘭卡"},
+                {"id":"146","code":"SD","name":"Sudan","c_name":"蘇丹"},
+                {"id":"147","code":"SR","name":"Suriname","c_name":"蘇利南"},
+                {"id":"148","code":"SZ","name":"Swaziland","c_name":"史瓦濟蘭"},
+                {"id":"149","code":"SE","name":"Sweden","c_name":"瑞典"},
+                {"id":"150","code":"CH","name":"Switzerland","c_name":"瑞士"},
+                {"id":"151","code":"SY","name":"Syrian Arab Rep","c_name":"敘利亞"},
+                {"id":"152","code":"TZ","name":"Tanzania","c_name":"坦尚尼亞"},
+                {"id":"153","code":"TH","name":"Thailand","c_name":"泰國"},
+                {"id":"154","code":"TG","name":"Togo","c_name":"多哥"},
+                {"id":"155","code":"TT","name":"Trinidad and Tobago","c_name":"千里達及托貝哥"},
+                {"id":"156","code":"TN","name":"Tunisia","c_name":"突尼西亞"},
+                {"id":"157","code":"TR","name":"Turkey","c_name":"土耳其"},
+                {"id":"158","code":"UG","name":"Uganda","c_name":"烏干達"},
+                {"id":"159","code":"UA","name":"Ukraine","c_name":"烏克蘭"},
+                {"id":"160","code":"AE","name":"United Arab Emirates","c_name":"阿拉伯聯合大公國"},
+                {"id":"161","code":"US","name":"United States of America","c_name":"美國"},
+                {"id":"162","code":"UY","name":"Uruguay","c_name":"烏拉圭"},
+                {"id":"163","code":"VE","name":"Venezuela","c_name":"委內瑞拉"},
+                {"id":"164","code":"VN","name":"Viet Nam","c_name":"越南"},
+                {"id":"165","code":"WS","name":"Western Samoa","c_name":"西薩摩亞"},
+                {"id":"166","code":"YE","name":"Yemen","c_name":"葉門"},
+                {"id":"167","code":"YU","name":"Yugoslavia","c_name":"南斯拉夫"},
+                {"id":"168","code":"ZM","name":"Zambia","c_name":"尚比亞"},
+                {"id":"169","code":"ZW","name":"Zimbabwe","c_name":"辛巴威"},
+                {"id":"170","code":"TW","name":"Taiwan","c_name":"臺灣"}
+            ];
+            const selectedCountry = ref('');
+            const year = ref('');
+            const price = ref('');
+            const stamps = ref([]);
+            const unit = ref('');
+            const remark = ref('');
+            const image = ref('');
+            const message = ref('輸入查詢條件');
+            const isLoading = ref(false);
+            const success = ref(false);
+            const showGoTop = ref(false);
+
+            function checkStamp () {
+              isLoading.value = true;
+              console.log('===== query begin =====')
+              console.log('country:', countries[selectedCountry.value-1].name, countries[selectedCountry.value-1].c_name);
+              console.log('year:', year.value);
+              console.log('price:', price.value);
+
+              // const queryUrl = `./controllers/checkStamp.php?country=${selectedCountry.value}&year=${year.value}&price=${price.value}`
+              const queryUrl = `http://localhost:8888/git-files/dr_c_collector/dr_c_collector/controllers/checkStamp.php?country=${selectedCountry.value}&year=${year.value}&price=${price.value}`
+
+              axios.get(queryUrl)
+                .then((response)=>{
+                    // console.log(response.data);
+                    if (response.data.success){
+                      message.value = response.data.message;
+                      console.log(response.data.stampData);
+                      stamps.value = response.data.stampData.map(stamp => ({
+                        ...stamp,
+                        edit: false
+                      }));
+                      success.value = true;
+                      console.log('sql: ', response.data.sql);
+                      console.log(response.data.message);
+                    } else {
+                      stamps.value = [];
+                      message.value = response.data.message;
+                      success.value = false;
+                      console.log('sql: ', response.data.sql);
+                      console.log(response.data.message);
+                    }
+                })
+                .catch( (error) => {
+                  message.value = response.data.message;
+                  success.value = false;
+                  console.log('sql: ', response.data.sql)
+                  console.error('error: ',error);
+                })
+                .finally(()=>isLoading.value = false);
+            }
+
+            function selectFile (event) {
+              image.value = event.target.files[0];
+            }
+
+            function addStamp () {
+              isLoading.value = true;
+
+              const formData = new FormData();
+              formData.append('country', selectedCountry.value,);
+              formData.append('price', price.value);
+              formData.append('year', year.value);
+              formData.append('unit', unit.value);
+              formData.append('remark', remark.value);
+              formData.append('image', image.value);
+              // axios.post('./controllers/addStamp0702.php', formData, {
+              axios.post("http://localhost:8888/git-files/dr_c_collector/dr_c_collector/controllers/addStamp0702.php", formData, {
+                headers: {
+                  'Content-Type': 'multipart/form-data',
+                },
+              })
+              .then((response) => {
+                if (response.data.success) {
+                  stamps.value = response.data.stampData;
+                  message.value = response.data.message;
+                  success.value = true;
+                  console.log(response.data.message);
+                } else {
+                  message.value = response.data.message;
+                  success.value = false;
+                  console.log(response.data.message)
+
+                }
+              })
+              .catch((error) =>{
+                console.error('error',error);
+                success.value = false;
+              })
+              .finally(()=>isLoading.value = false);
+            }
+
+            // function editStamp(stamp) {
+            //   stamp.edit = true;
+            //   console.log(stamp);
+            //   console.log('btn pressed');
+            // }
+
+
+            function handleScroll () {
+              showGoTop.value = window.scrollY > 100;
+            };
+
+            function goTop () {
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            };
+
+            onMounted(() => {
+              window.addEventListener('scroll', handleScroll);
+            });
+
+            return {
+              countries,
+              selectedCountry,
+              year,
+              price,
+              stamps,
+              image,
+              remark,
+              unit,
+              message,
+              isLoading,
+              success,
+              showGoTop,
+              checkStamp,
+              selectFile,
+              addStamp,
+              goTop,
+              handleScroll
+            };
+          }
+        });
+        app.mount('#app');
+    </script>
+  </body>
+</html>
