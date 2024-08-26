@@ -195,7 +195,7 @@ const isLoading = ref(false);
 const success = ref(false);
 
 let urlSource = 'http://localhost:8888/git-files/collector_vue/collector_vue';
-// urlSource = '.';
+urlSource = '.';
 
 // get country
 async function getCountry() {

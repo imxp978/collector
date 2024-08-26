@@ -4,8 +4,8 @@
       <div v-if="!authStore.isLogin" class="col-4 mx-auto">
         <h3 class="text-center pt-3">登入</h3>
         <hr>
-        <div>
-            <img src="/images/envelopes/000015_1.jpg" class="mx-auto">
+        <div class="logo">
+            <img src="/images/logo.svg" class="mx-auto">
         </div>
         <hr>
         <input type="text" v-model="authStore.username" placeholder="username" class="form-control m-3" autofocus>
@@ -24,8 +24,8 @@
       <div v-else class="col-6 mx-auto">
         <h3 class="text-center pt-3">成功登入</h3>
         <hr>
-        <div>
-          <img src="/images/envelopes/000015.jpg" class="mx-auto">
+        <div class="logo">
+          <img src="/images/logo.svg" class="mx-auto">
         </div>
         <hr>
         <p class="text-center">歡迎{{ authStore.username }}</p>
@@ -74,6 +74,11 @@ img {
 .container-fluid:hover {
   background-color: rgb(230,230,230);
   transition: 0.3s;
+}
+
+.logo {
+  max-width: 300px;
+  margin: 0 auto;
 }
 
 .loader {

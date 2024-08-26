@@ -7,17 +7,10 @@ require_once("../controllers/connections/conn_db.php");
     if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         try {
 
-<<<<<<< HEAD
             $country = ($_POST['country'] !=='') ? $_POST['country'] : NULL;
             $price = ($_POST['price'] !=='') ? $_POST['price'] : NULL;
             $year = ($_POST['year'] !=='') ? $_POST['year'] : NULL;
             $unit = ($_POST['unit'] !=='') ? $_POST['unit'] : NULL;
-=======
-            $country = ($_POST['country']) ? $_POST['country'] : NULL;
-            $price = ($_POST['price']) ? $_POST['price'] : NULL;
-            $year = ($_POST['year']) ? $_POST['year'] : NULL;
-            $unit = ($_POST['unit']) ? $_POST['unit'] : NULL;
->>>>>>> 6ddb6eb435e7428341837a619a2964e2bbf26e5b
             $remark = ($_POST['remark']) ? $_POST['remark'] : NULL;
 
             // if ($queryFindLastFile) {
@@ -47,7 +40,6 @@ require_once("../controllers/connections/conn_db.php");
                             $stmtUpdate = $link->prepare($sqlUpdate);
                             $queryUpdate = $stmtUpdate->execute($paramsUpdate);
                             // $queryUpdate = $link->query($sqlUpdate);
-<<<<<<< HEAD
                             $stamps = $stmtUpdate->fetchAll(PDO::FETCH_ASSOC);
                             if ($stamps) {
                                 http_response_code(201);
@@ -97,50 +89,6 @@ require_once("../controllers/connections/conn_db.php");
                 'success' => false,
                 'message' => $error->getMessage()
             ];
-=======
-                            $stamps = $queryUpdate->fetchAll(PDO::FETCH_ASSOC);
-                            if ($stamps) {
-                                $data = array(
-                                    'success' => true,
-                                    'message' => 'Stamp added',
-                                    'stampData' => $stamps
-                                );
-                            } else {
-                                $data = array(
-                                    'success' => false,
-                                    'message' => 'Stamp added but stamp list not found'
-                                );
-                            }
-                        } else {
-                            $data = array(
-                                'success' => false,
-                                'message' => 'Stamp added but cannot get stamp list'
-                            );
-                        }
-                    } else {
-                        $data = array(
-                            'success' => false,
-                            'message' => 'Image uploaded but failed to move image'
-                        );
-                    }
-                } else {
-                    $data = array(
-                        'success' => false,
-                        'message' => 'Image uploaded but canoot get last filename'
-                    );
-                }     
-            } else {
-                $data = array(
-                    'success' => false,
-                    'message' => 'Image upload failed'
-                );
-            }
-        } catch(Exception $error) {
-            $data = array(
-                'success' => false,
-                'message' => $error->getMessage()
-            );
->>>>>>> 6ddb6eb435e7428341837a619a2964e2bbf26e5b
         } 
     }
 echo json_encode($data, JSON_UNESCAPED_UNICODE);
