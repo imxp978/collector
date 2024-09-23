@@ -10,7 +10,7 @@ export const useAuthStore = defineStore('Auth', ()=> {
   const isLogin = ref(localStorage.getItem('collector') !== null);
   const isLoading = ref(false);
   
-  let url = 'http://localhost:8888/git-files/collector';
+  let url = 'http://localhost:8888/git-files/collector_vue/collector_vue';
   url = '.';
 
   async function login() {

@@ -109,7 +109,10 @@
               <a :name="i.id"></a>         
               <!-- edit -->
               <div class="col-12 mx-auto text-end" v-if="i.edit">
-                <button class="btn btn-outline-dark btn-sm" @click.prevent="cancelEdit(i)">取消</button>
+                <div class="d-flex justify-content-between mb-3">
+                  <button class="btn btn-outline-danger btn-sm" @click.prevent="delEnvelope(i)">刪除</button>
+                  <button class="btn btn-outline-dark btn-sm" @click.prevent="cancelEdit(i)">取消</button>
+                </div>
                 <div class="row">
                   <div class="col-12 col-md-6 row">
                     <div class="col-12 text-start"><h5>寄出：</h5><hr></div>
@@ -384,16 +387,10 @@ function reset () {
   file3.value.value = '';
 }
 
-
-
-
-
 // add envelope
-
 async function addEnvelope() {
   if (sendCountry.value !== '' && type.value !== '') {
     isLoading.value = true;
-  
     const formData = new FormData();
     formData.append('sendCountry', sendCountry.value,);
     formData.append('sendCity', sendCity.value);
@@ -565,7 +562,7 @@ async function updateEnvelope(envelope) {
   } finally {
     isLoading.value = false;
     resetUpdate();
-    checkEnvelope(0);
+    checkEnvelope(1);
   }
 }
 
@@ -589,6 +586,30 @@ function resetUpdate () {
   // newFile1.value.value = '';
   // newFile2.value.value = '';
   // newFile3.value.value = '';
+}
+
+async function delEnvelope (envelope) {
+  if(confirm('刪除郵封？')) {
+    try {
+      const response = await axios({
+        method: 'delete',
+        url: `${urlSource}/controllers/delEnvelope.php`,
+        data: {'id': envelope.id}, 
+        headers: {'Content-Type': 'application/json'}
+      });
+
+      if (response.data.success) {
+        
+        message.value = '郵封已刪除';
+        isEditing.value = false;
+        envelope.edit = false;
+      }
+    } catch (error) {
+      console.error(error)
+    } finally {
+      checkEnvelope(1)
+    }
+  }
 }
 
 // Modal

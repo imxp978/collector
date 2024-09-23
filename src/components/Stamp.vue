@@ -28,7 +28,6 @@
                   <option v-for="country in countries" :key="country.id" :value="country.id">{{ country.name }} | {{
                     country.code }} {{ country.c_name }}</option>
                 </datalist><br>
-                
           </div>
           <div class="col-12 col-md-2">
             <input type="text" class="form-control" v-model="price" placeholder="郵票面額 Price" />
@@ -88,7 +87,10 @@
             <a :name="i.id"></a>
             <!-- edit -->
             <div class="col-12 mx-auto text-end" v-if="i.edit">
-              <button class="btn btn-outline-dark btn-sm mb-2" @click="cancelEdit(i)">取消</button>
+              <div class="d-flex justify-content-between mb-3">
+                  <button class="btn btn-outline-danger btn-sm" @click.prevent="delStamp(i)">刪除</button>
+                  <button class="btn btn-outline-dark btn-sm mb-2" @click="cancelEdit(i)">取消</button>
+                </div>
               <div class="row text-center">
                 
                 <div class="col-2 text-end">國家</div>
@@ -147,8 +149,8 @@
               <img :src="`images/stamps/${i.img}`" class="img-fluid img-display mb-3" @click=showModal(i)>
                   <!-- << modal -->
                   <Transition name="modal" >
-                    <div v-if="i.display" class="modal-mask">
-                      <div class="modal-container">
+                    <div v-if="i.display" class="modal-mask" @click="closeModal(i)">
+                      <div class="modal-container" @click.stop>
                         <div>
                           <button
                             class="modal-default-button btn-close"
@@ -383,6 +385,30 @@ function updateStamp(stamp) {
       isLoading.value = false
       checkStamp(0);
     });
+}
+
+async function delStamp (stamp) {
+  if(confirm('刪除郵票？')) {
+    try {
+      const response = await axios({
+        method: 'delete',
+        url: `${urlSource}/controllers/delStamp.php`,
+        data: {'id': stamp.id}, 
+        headers: {'Content-Type': 'application/json'}
+      });
+
+      if (response.data.success) {
+        
+        message.value = '郵票已刪除';
+        isEditing.value = false;
+        stamp.edit = false;
+      }
+    } catch (error) {
+      console.error(error)
+    } finally {
+      checkStamp(0)
+    }
+  }
 }
 
 // modal
